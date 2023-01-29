@@ -2,9 +2,10 @@
 
 pragma solidity ^0.8.11;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract JobContract is Ownable {
+contract JobContract is Initializable, OwnableUpgradeable {
     struct Job {
         uint256 jobId;
         string companyName;
@@ -14,6 +15,10 @@ contract JobContract is Ownable {
         string location;
         string companyWebsiteUrl;
         address employer;
+    }
+
+    constructor() initializer {
+        __Ownable_init();
     }
 
     uint256 public JOB_ID = 0;
