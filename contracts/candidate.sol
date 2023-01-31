@@ -48,6 +48,11 @@ contract CandidateContract is Initializable, ContextUpgradeable {
             "Candidate is registered using this address."
         );
 
+        require(
+            _msgSender() == _newCandidate.ownerAddress,
+            "OwnerAddress not matching msg.sender."
+        );
+
         CANDIDATE_ID++;
 
         _newCandidate.id = CANDIDATE_ID;
@@ -96,6 +101,11 @@ contract CandidateContract is Initializable, ContextUpgradeable {
         returns (Candidate memory)
     {
         uint256 candidateId = addressToId[_candidateAddress];
+        require(
+            candidateId != 0,
+            "Candidate not registered using this address."
+        );
+
         return candidates[candidateId - 1];
     }
 
