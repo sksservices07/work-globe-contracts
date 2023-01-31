@@ -8,9 +8,8 @@ const CandidateArtifacts = require("../artifacts/contracts/candidate.sol/Candida
 const { deployContract } = waffle;
 
 function createCandidateProfile(index: Number, ownerAddress: string): CandidateContract.CandidateStruct {
-    let fname: string = "FUser" + Number;
-    let lname: string = "LUser" + + Number;
-
+    let fname: string = "FUser" + index;
+    let lname: string = "LUser" + + index;
     let randomX = Date.now();
 
     return {
@@ -23,7 +22,7 @@ function createCandidateProfile(index: Number, ownerAddress: string): CandidateC
         yoe: (randomX % 10).toString(),
         bio: "Hi there.",
         profileImageIPFSURL: "ipfs://Q83k773kuh234f2382sdf4s8f5e" + randomX,
-        experiences: ["I have 4 experiences.", "I had first worked here.", "Then there."],
+        experiences: [`I have ${index} experiences.`, "I had first worked here.", "Then there."],
         skills: ["Solidity", "NodeJS", "Rust"],
         pronouns: "He/Him",
         resumeIPFSURL: "ipfs://Qf98uik4mkmksdkwkufeu4eklfskdjfwehkri4",
@@ -91,6 +90,44 @@ describe("Candidate Tests", () => {
     });
 
     it("Register more candidate", async () => {
+        let ownerAddress: string = accounts[2].address;
+        await candidateContractInstance.connect(accounts[2]).registerCandidate(createCandidateProfile(2, ownerAddress), {
+            from: ownerAddress
+        });
 
+        ownerAddress = accounts[3].address;
+        await candidateContractInstance.connect(accounts[3]).registerCandidate(createCandidateProfile(3, ownerAddress), {
+            from: ownerAddress
+        });
+
+        ownerAddress = accounts[4].address;
+        await candidateContractInstance.connect(accounts[4]).registerCandidate(createCandidateProfile(4, ownerAddress), {
+            from: ownerAddress
+        });
+
+        ownerAddress = accounts[5].address;
+        await candidateContractInstance.connect(accounts[5]).registerCandidate(createCandidateProfile(5, ownerAddress), {
+            from: ownerAddress
+        });
+
+        let totalCandidates = await candidateContractInstance.totalCandidates();
+        expect(totalCandidates).to.equal(5);
     });
+
+    it("Edit profile Candidate", async () => {
+        let ownerAddress: string = accounts[4].address;
+        let prevCandidateProfile: CandidateContract.CandidateStruct = await candidateContractInstance.getCandidateByAddress(ownerAddress);
+
+        let profile: CandidateContract.CandidateStruct = createCandidateProfile(66, ownerAddress);
+        profile.id = 4;
+        await candidateContractInstance.connect(accounts[4]).editRegisteredCandidate(profile, {
+            from: ownerAddress
+        });
+
+        let updatedCandidateProfile: CandidateContract.CandidateStruct = await candidateContractInstance.getCandidateByAddress(ownerAddress);
+
+        expect(prevCandidateProfile.id).to.equal(updatedCandidateProfile.id);
+        expect(prevCandidateProfile.ownerAddress).to.equal(updatedCandidateProfile.ownerAddress);
+        expect(updatedCandidateProfile.fname).to.equal('FUser66');
+    })
 })
