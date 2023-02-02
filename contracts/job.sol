@@ -10,7 +10,7 @@ import "./candidate.sol";
 
 contract JobContract is Initializable, ContextUpgradeable, OwnableUpgradeable {
     struct Job {
-        uint256 jobId;
+        uint256 jobId; // job index starts from 0
         string companyName;
         string position;
         string description;
@@ -21,7 +21,7 @@ contract JobContract is Initializable, ContextUpgradeable, OwnableUpgradeable {
     }
 
     uint256 public JOB_ID = 0;
-    Job[] public jobs;
+    Job[] private jobs;
     mapping(address => address[]) public candidates;
 
     CandidateContract public candidateContract;
@@ -36,7 +36,7 @@ contract JobContract is Initializable, ContextUpgradeable, OwnableUpgradeable {
         string memory _companyName,
         string memory _position,
         string memory _description,
-        string memory employmentType,
+        string memory _employmentType,
         string memory _location,
         string memory _companyWebsiteUrl
     ) public payable {
@@ -46,10 +46,10 @@ contract JobContract is Initializable, ContextUpgradeable, OwnableUpgradeable {
             companyName: _companyName,
             position: _position,
             description: _description,
-            employmentType: employmentType,
+            employmentType: _employmentType,
             location: _location,
             companyWebsiteUrl: _companyWebsiteUrl,
-            employer: msg.sender
+            employer: _msgSender()
         });
         jobs.push(job);
         JOB_ID++;
@@ -60,24 +60,43 @@ contract JobContract is Initializable, ContextUpgradeable, OwnableUpgradeable {
         return jobs;
     }
 
+    function getJobById(uint256 _jobid) public view returns (Job memory) {
+        return jobs[_jobid];
+    }
+
     // delete Job
     // this is highly gas consuming task
     function deleteJob(uint256 _jobId) public {
-        require(msg.sender == jobs[_jobId].employer || msg.sender == owner());
+        require(
+            _msgSender() == jobs[_jobId].employer || _msgSender() == owner(),
+            "You are neither employer of this job nor owner."
+        );
 
         if (_jobId >= jobs.length) return;
         for (uint256 i = _jobId; i < jobs.length - 1; i++) {
             jobs[i] = jobs[i + 1];
             jobs[i].jobId = i;
         }
-        delete jobs[jobs.length - 1];
+
+        jobs.pop();
         JOB_ID--;
     }
 
     // candidate will apply for job
     function applyForJob(uint256 _jobid) public {
-        candidateContract.getCandidateByAddress(_msgSender());
-        candidates[jobs[_jobid].employer].push(msg.sender);
+        candidateContract.getCandidateByAddress(_msgSender()); // will automatically throw error if candidate with _msgSender doesn't exists
+
+        address[] memory appliedCandidates = candidates[
+            jobs[_jobid].employer
+        ];
+        for (uint256 i = 0; i < appliedCandidates.length; i++) {
+            require(
+                appliedCandidates[i] != _msgSender(),
+                "You have already registered for this job using this address."
+            );
+        }
+
+        candidates[jobs[_jobid].employer].push(_msgSender());
     }
 
     // returns total number of jobs
@@ -90,6 +109,10 @@ contract JobContract is Initializable, ContextUpgradeable, OwnableUpgradeable {
         view
         returns (address[] memory)
     {
+        require(
+            jobs[_jobid].employer == _msgSender(),
+            "You are not employer of this job."
+        );
         return candidates[jobs[_jobid].employer];
     }
 }
