@@ -7,7 +7,7 @@ import { createCandidateProfile } from "./utils";
 
 const CandidateArtifacts = require("../artifacts/contracts/candidate.sol/CandidateContract.json");
 const JobArtifacts = require("../artifacts/contracts/job.sol/JobContract.json");
-const { deployContract } = waffle;
+const { deployContract, provider } = waffle;
 
 describe("Job Tests", () => {
     let accounts: SignerWithAddress[];
@@ -169,5 +169,21 @@ describe("Job Tests", () => {
     it("Employer sees candidates who have applied", async () => {
         let appliedCandidates = await jobContractInstance.getAppliedCandidatesByJobId(0);
         expect(appliedCandidates.length).to.equal(4);
+    });
+
+    it("Owner withdraw funds", async () => {
+        let jobContractBalance: BigNumber = await provider.getBalance(jobContractInstance.address);
+
+        await expect(() =>
+            jobContractInstance.withdrawFunds(accounts[0].address)
+        ).to.changeEtherBalances([jobContractInstance, accounts[0]], [jobContractBalance.mul(-1), jobContractBalance]);
+    });
+
+    it("Non-Owner withdraw funds - Revert", async () => {
+        await expect(
+            jobContractInstance.connect(accounts[1]).withdrawFunds(accounts[0].address, {
+                from: accounts[1].address
+            })
+        ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 })
