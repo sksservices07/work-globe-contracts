@@ -86,9 +86,7 @@ contract JobContract is Initializable, ContextUpgradeable, OwnableUpgradeable {
     function applyForJob(uint256 _jobid) public {
         candidateContract.getCandidateByAddress(_msgSender()); // will automatically throw error if candidate with _msgSender doesn't exists
 
-        address[] memory appliedCandidates = candidates[
-            jobs[_jobid].employer
-        ];
+        address[] memory appliedCandidates = candidates[jobs[_jobid].employer];
         for (uint256 i = 0; i < appliedCandidates.length; i++) {
             require(
                 appliedCandidates[i] != _msgSender(),
@@ -114,5 +112,9 @@ contract JobContract is Initializable, ContextUpgradeable, OwnableUpgradeable {
             "You are not employer of this job."
         );
         return candidates[jobs[_jobid].employer];
+    }
+
+    function withdrawFunds(address _to) public onlyOwner {
+        payable(_to).transfer(address(this).balance);
     }
 }
